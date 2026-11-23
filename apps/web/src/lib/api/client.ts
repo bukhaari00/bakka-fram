@@ -1,7 +1,8 @@
 import { db } from '../db';
 import { syncEngine } from '../sync/syncEngine';
+import { getApiBaseUrl } from './config';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const API_BASE = getApiBaseUrl();
 
 /**
  * Offline-Aware API Client

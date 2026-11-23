@@ -1,7 +1,8 @@
 import { db, OutboxOperation } from '../db';
 import { generateUUID } from '../utils/uuid';
+import { getApiBaseUrl } from '../api/config';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const API_BASE = getApiBaseUrl();
 
 export type SyncState = 'ONLINE' | 'OFFLINE' | 'SYNCING' | 'PENDING' | 'CONFLICT' | 'REVOKED';
 

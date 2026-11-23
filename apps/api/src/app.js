@@ -23,7 +23,19 @@ export function createApp(prisma) {
   // Basic security and parsing middleware
   app.use(helmet());
   app.use(cors({
-    origin: config.appOrigin,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, internal service-to-service, or same-origin)
+      if (!origin) return callback(null, true);
+      if (
+        origin === config.appOrigin ||
+        origin === 'http://localhost:3000' ||
+        origin.endsWith('.vercel.app') ||
+        process.env.NODE_ENV !== 'production'
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
     credentials: true
   }));
   app.use(cookieParser());

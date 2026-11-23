@@ -3,8 +3,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { verifyOfflineLogin } from './offlineAuth';
+import { getApiBaseUrl } from '../api/config';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const API_BASE = getApiBaseUrl();
 
 export interface AuthUser {
   id: string;

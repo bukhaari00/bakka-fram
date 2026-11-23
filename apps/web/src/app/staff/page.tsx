@@ -19,8 +19,9 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { generateUUID } from '../../lib/utils/uuid';
+import { getApiBaseUrl } from '../../lib/api/config';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const API_BASE = getApiBaseUrl();
 
 export interface ManagedUser {
   id: string;

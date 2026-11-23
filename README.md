@@ -1,5 +1,8 @@
 # Bakka Farm Management System
 
+> 🌐 **Live Web Application**: [https://test-app-ashy-phi.vercel.app](https://test-app-ashy-phi.vercel.app)  
+> 💻 **Local URL**: [http://localhost:3000](http://localhost:3000)
+
 An offline-first, multi-role agricultural operations and financial management platform engineered for **Bakka Farm** (Afgooye River Valley).
 
 Built strictly in accordance with:
