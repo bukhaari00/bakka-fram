@@ -1,0 +1,33 @@
+{
+  "name": "bakka-farm-management-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bakka Farm Management System - Offline-first agricultural operations platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "dev:api": "npm --workspace=apps/api run dev",
+    "dev:web": "npm --workspace=apps/web run dev",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "db:generate": "npm --workspace=apps/api run prisma:generate",
+    "db:migrate": "npm --workspace=apps/api run db:migrate",
+    "db:seed": "npm --workspace=apps/api run db:seed"
+  },
+  "keywords": [
+    "farm-management",
+    "offline-first",
+    "agriculture",
+    "nextjs",
+    "express",
+    "prisma",
+    "mysql"
+  ],
+  "author": "Bakka Farm Engineering Team",
+  "license": "UNLICENSED"
+}

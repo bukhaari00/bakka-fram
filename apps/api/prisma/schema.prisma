@@ -1,0 +1,1112 @@
+// Bakka Farm Management System - MySQL 8 Prisma Schema
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==========================================
+// 1. IDENTITY, ROLES, DEVICES & SESSIONS
+// ==========================================
+
+model User {
+  id                    String    @id @default(uuid()) @db.Char(36)
+  farm_id               String    @db.Char(36)
+  email                 String    @unique @db.VarChar(191)
+  username              String?   @unique @db.VarChar(100)
+  phone                 String?   @db.VarChar(50)
+  password_hash         String    @db.VarChar(255)
+  full_name             String    @db.VarChar(150)
+  role_name             String    @db.VarChar(50)
+  is_active             Boolean   @default(true)
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+  version               Int       @default(1)
+
+  farm                  Farm      @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  devices               UserDevice[]
+  sessions              Session[]
+  tasks_assigned        TaskAssignment[]
+  task_activities       TaskActivityLog[]
+  tasks_supervised      Task[]    @relation("SupervisorTasks")
+  crop_observations     CropObservation[]
+  irrigation_events     IrrigationEvent[]
+  stock_receipts        StockReceipt[]
+  stock_issues          StockIssue[]
+  stock_adjustments     StockAdjustment[] @relation("RecordedAdjustments")
+  approved_adjustments  StockAdjustment[] @relation("ApprovedAdjustments")
+  harvest_records       HarvestRecord[]
+  sales_recorded        Sale[]
+  customer_payments     CustomerPayment[]
+  purchases_recorded    Purchase[]
+  supplier_payments     SupplierPayment[]
+  expenses_recorded     Expense[]
+  audit_logs            AuditLog[]
+
+  @@index([farm_id])
+  @@index([role_name])
+  @@index([is_active])
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Char(36)
+  name        String   @unique @db.VarChar(50)
+  description String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  role_permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Char(36)
+  code        String   @unique @db.VarChar(100)
+  description String?  @db.VarChar(255)
+  module      String   @db.VarChar(50)
+
+  role_permissions RolePermission[]
+
+  @@index([module])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id            String     @id @default(uuid()) @db.Char(36)
+  role_id       String     @db.Char(36)
+  permission_id String     @db.Char(36)
+
+  role          Role       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  permission    Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+
+  @@unique([role_id, permission_id])
+  @@map("role_permissions")
+}
+
+model UserDevice {
+  id                    String    @id @default(uuid()) @db.Char(36)
+  user_id               String    @db.Char(36)
+  device_id             String    @unique @db.VarChar(128)
+  device_name           String?   @db.VarChar(100)
+  offline_verifier_hash String?   @db.VarChar(255)
+  offline_verifier_salt String?   @db.VarChar(128)
+  enrolled_at           DateTime  @default(now())
+  last_sync_at          DateTime?
+  is_revoked            Boolean   @default(false)
+  updated_at            DateTime  @updatedAt
+
+  user                  User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([is_revoked])
+  @@map("user_devices")
+}
+
+model Session {
+  id         String   @id @default(uuid()) @db.Char(36)
+  user_id    String   @db.Char(36)
+  token_hash String   @unique @db.VarChar(255)
+  expires_at DateTime
+  ip_address String?  @db.VarChar(45)
+  user_agent String?  @db.VarChar(255)
+  created_at DateTime @default(now())
+
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([expires_at])
+  @@map("sessions")
+}
+
+// ==========================================
+// 2. FARM SETUP, FIELDS, SEASONS & UNITS
+// ==========================================
+
+model Farm {
+  id               String   @id @default(uuid()) @db.Char(36)
+  name             String   @db.VarChar(150)
+  code             String   @unique @db.VarChar(50)
+  location         String?  @db.VarChar(255)
+  contact_phone    String?  @db.VarChar(50)
+  contact_email    String?  @db.VarChar(191)
+  currency         String   @default("USD") @db.VarChar(10)
+  timezone         String   @default("UTC") @db.VarChar(50)
+  default_language String   @default("en") @db.VarChar(10)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  users            User[]
+  settings         FarmSetting[]
+  fields           Field[]
+  seasons          Season[]
+  units            Unit[]
+  crop_types       CropType[]
+  planting_batches PlantingBatch[]
+  tasks            Task[]
+  inventory_items  InventoryItem[]
+  inventory_locations InventoryLocation[]
+  stock_receipts   StockReceipt[]
+  stock_issues     StockIssue[]
+  stock_adjustments StockAdjustment[]
+  stock_ledger     StockLedger[]
+  harvest_records  HarvestRecord[]
+  produce_lots     ProduceLot[]
+  produce_movements ProduceMovement[]
+  customers        Customer[]
+  sales            Sale[]
+  customer_payments CustomerPayment[]
+  suppliers        Supplier[]
+  purchases        Purchase[]
+  supplier_payments SupplierPayment[]
+  expense_categories ExpenseCategory[]
+  expenses         Expense[]
+  cash_accounts    CashAccount[]
+  cash_transactions CashTransaction[]
+  sync_operations  SyncOperation[]
+  sync_conflicts   SyncConflict[]
+  audit_logs       AuditLog[]
+  attachments      Attachment[]
+
+  @@map("farms")
+}
+
+model FarmSetting {
+  id            String   @id @default(uuid()) @db.Char(36)
+  farm_id       String   @db.Char(36)
+  setting_key   String   @db.VarChar(100)
+  setting_value String   @db.Text
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  farm          Farm     @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+
+  @@unique([farm_id, setting_key])
+  @@map("farm_settings")
+}
+
+model Field {
+  id           String    @id @default(uuid()) @db.Char(36)
+  farm_id      String    @db.Char(36)
+  name         String    @db.VarChar(100)
+  code         String    @db.VarChar(50)
+  total_area   Decimal   @db.Decimal(14, 3)
+  area_unit    String    @default("HA") @db.VarChar(20)
+  soil_type    String?   @db.VarChar(100)
+  water_source String?   @db.VarChar(100)
+  status       String    @default("ACTIVE") @db.VarChar(30)
+  notes        String?   @db.Text
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  version      Int       @default(1)
+
+  farm             Farm              @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  planting_batches PlantingBatch[]
+  tasks            Task[]
+  stock_issues     StockIssue[]
+  irrigation_events IrrigationEvent[]
+  harvest_records  HarvestRecord[]
+  expenses         Expense[]
+  crop_observations CropObservation[]
+
+  @@unique([farm_id, code])
+  @@index([farm_id, status])
+  @@map("fields")
+}
+
+model Season {
+  id         String    @id @default(uuid()) @db.Char(36)
+  farm_id    String    @db.Char(36)
+  name       String    @db.VarChar(100)
+  start_date DateTime  @db.Date
+  end_date   DateTime? @db.Date
+  status     String    @default("ACTIVE") @db.VarChar(30)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  version    Int       @default(1)
+
+  farm             Farm            @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  planting_batches PlantingBatch[]
+  expenses         Expense[]
+
+  @@unique([farm_id, name])
+  @@index([farm_id, status])
+  @@map("seasons")
+}
+
+model Unit {
+  id                         String   @id @default(uuid()) @db.Char(36)
+  farm_id                    String   @db.Char(36)
+  name                       String   @db.VarChar(50)
+  symbol                     String   @db.VarChar(20)
+  category                   String   @db.VarChar(30) // AREA, WEIGHT, VOLUME, COUNT
+  conversion_factor_to_base  Decimal  @default(1.0000) @db.Decimal(14, 4)
+  created_at                 DateTime @default(now())
+  updated_at                 DateTime @updatedAt
+
+  farm                       Farm     @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+
+  @@unique([farm_id, symbol])
+  @@index([farm_id, category])
+  @@map("units")
+}
+
+// ==========================================
+// 3. CROPS, VARIETIES & PLANTING BATCHES
+// ==========================================
+
+model CropType {
+  id                      String        @id @default(uuid()) @db.Char(36)
+  farm_id                 String        @db.Char(36)
+  name                    String        @db.VarChar(100)
+  category                String?       @db.VarChar(50)
+  default_unit            String        @default("KG") @db.VarChar(20)
+  expected_duration_days  Int?
+  notes                   String?       @db.Text
+  created_at              DateTime      @default(now())
+  updated_at              DateTime      @updatedAt
+
+  farm                    Farm          @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  varieties               CropVariety[]
+  planting_batches        PlantingBatch[]
+  sale_lines              SaleLine[]
+
+  @@unique([farm_id, name])
+  @@map("crop_types")
+}
+
+model CropVariety {
+  id               String          @id @default(uuid()) @db.Char(36)
+  crop_type_id     String          @db.Char(36)
+  name             String          @db.VarChar(100)
+  days_to_maturity Int?
+  yield_potential  String?         @db.VarChar(100)
+  notes            String?         @db.Text
+  created_at       DateTime        @default(now())
+  updated_at       DateTime        @updatedAt
+
+  crop_type        CropType        @relation(fields: [crop_type_id], references: [id], onDelete: Cascade)
+  planting_batches PlantingBatch[]
+
+  @@unique([crop_type_id, name])
+  @@map("crop_varieties")
+}
+
+model PlantingBatch {
+  id                     String    @id @default(uuid()) @db.Char(36)
+  farm_id                String    @db.Char(36)
+  field_id               String    @db.Char(36)
+  crop_type_id           String    @db.Char(36)
+  crop_variety_id        String?   @db.Char(36)
+  season_id              String    @db.Char(36)
+  batch_code             String    @db.VarChar(60)
+  planting_date          DateTime  @db.Date
+  planted_area           Decimal   @db.Decimal(14, 3)
+  area_unit              String    @default("HA") @db.VarChar(20)
+  seed_quantity          Decimal   @db.Decimal(14, 3)
+  seed_unit              String    @default("KG") @db.VarChar(20)
+  planting_method        String?   @db.VarChar(100)
+  expected_harvest_date  DateTime? @db.Date
+  status                 String    @default("PLANTED") @db.VarChar(30)
+  responsible_user_id    String?   @db.Char(36)
+  notes                  String?   @db.Text
+  created_at             DateTime  @default(now())
+  updated_at             DateTime  @updatedAt
+  version                Int       @default(1)
+
+  farm                   Farm              @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  field                  Field             @relation(fields: [field_id], references: [id], onDelete: Restrict)
+  crop_type              CropType          @relation(fields: [crop_type_id], references: [id], onDelete: Restrict)
+  crop_variety           CropVariety?      @relation(fields: [crop_variety_id], references: [id], onDelete: SetNull)
+  season                 Season            @relation(fields: [season_id], references: [id], onDelete: Restrict)
+  tasks                  Task[]
+  observations           CropObservation[]
+  irrigation_events      IrrigationEvent[]
+  stock_issues           StockIssue[]
+  harvest_records        HarvestRecord[]
+  expenses               Expense[]
+
+  @@unique([farm_id, batch_code])
+  @@index([farm_id, status])
+  @@index([field_id])
+  @@index([season_id])
+  @@map("planting_batches")
+}
+
+model CropObservation {
+  id                 String        @id @default(uuid()) @db.Char(36)
+  farm_id            String        @db.Char(36)
+  planting_batch_id  String        @db.Char(36)
+  field_id           String?       @db.Char(36)
+  reporter_user_id   String        @db.Char(36)
+  observation_date   DateTime      @db.Date
+  growth_stage       String?       @db.VarChar(100)
+  crop_condition     String        @db.VarChar(50) // EXCELLENT, GOOD, FAIR, POOR, DAMAGED
+  pest_disease_signs String?       @db.VarChar(255)
+  notes              String?       @db.Text
+  photo_url          String?       @db.VarChar(255)
+  created_at         DateTime      @default(now())
+  updated_at         DateTime      @updatedAt
+  version            Int           @default(1)
+
+  planting_batch     PlantingBatch @relation(fields: [planting_batch_id], references: [id], onDelete: Cascade)
+  field              Field?        @relation(fields: [field_id], references: [id], onDelete: SetNull)
+  reporter           User          @relation(fields: [reporter_user_id], references: [id], onDelete: Restrict)
+
+  @@index([farm_id, observation_date])
+  @@index([planting_batch_id])
+  @@map("crop_observations")
+}
+
+// ==========================================
+// 4. TASKS, FIELD WORKERS & IRRIGATION
+// ==========================================
+
+model Task {
+  id                  String            @id @default(uuid()) @db.Char(36)
+  farm_id             String            @db.Char(36)
+  title               String            @db.VarChar(150)
+  task_type           String            @db.VarChar(50)
+  field_id            String?           @db.Char(36)
+  planting_batch_id   String?           @db.Char(36)
+  supervisor_user_id  String?           @db.Char(36)
+  priority            String            @default("MEDIUM") @db.VarChar(20)
+  status              String            @default("PENDING") @db.VarChar(30)
+  planned_date        DateTime          @db.Date
+  due_date            DateTime?         @db.Date
+  completed_at        DateTime?
+  labor_hours         Decimal?          @db.Decimal(6, 2)
+  instructions        String?           @db.Text
+  notes               String?           @db.Text
+  created_at          DateTime          @default(now())
+  updated_at          DateTime          @updatedAt
+  version             Int               @default(1)
+
+  farm                Farm              @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  field               Field?            @relation(fields: [field_id], references: [id], onDelete: SetNull)
+  planting_batch      PlantingBatch?    @relation(fields: [planting_batch_id], references: [id], onDelete: SetNull)
+  supervisor          User?             @relation("SupervisorTasks", fields: [supervisor_user_id], references: [id], onDelete: SetNull)
+  assignments         TaskAssignment[]
+  activities          TaskActivityLog[]
+  stock_issues        StockIssue[]
+
+  @@index([farm_id, status])
+  @@index([farm_id, planned_date])
+  @@index([field_id])
+  @@index([planting_batch_id])
+  @@map("tasks")
+}
+
+model TaskAssignment {
+  id          String   @id @default(uuid()) @db.Char(36)
+  task_id     String   @db.Char(36)
+  user_id     String   @db.Char(36)
+  assigned_at DateTime @default(now())
+
+  task        Task     @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([task_id, user_id])
+  @@index([user_id])
+  @@map("task_assignments")
+}
+
+model TaskActivityLog {
+  id          String   @id @default(uuid()) @db.Char(36)
+  task_id     String   @db.Char(36)
+  user_id     String   @db.Char(36)
+  status_from String   @db.VarChar(30)
+  status_to   String   @db.VarChar(30)
+  notes       String?  @db.Text
+  created_at  DateTime @default(now())
+
+  task        Task     @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([task_id])
+  @@map("task_activity_logs")
+}
+
+model IrrigationEvent {
+  id                   String         @id @default(uuid()) @db.Char(36)
+  farm_id              String         @db.Char(36)
+  field_id             String         @db.Char(36)
+  planting_batch_id    String?        @db.Char(36)
+  recorded_by_user_id  String         @db.Char(36)
+  event_date           DateTime
+  water_source         String         @db.VarChar(100)
+  irrigation_method    String         @db.VarChar(100)
+  duration_minutes     Int?
+  water_volume_liters  Decimal?       @db.Decimal(14, 2)
+  cost                 Decimal?       @db.Decimal(14, 2)
+  notes                String?        @db.Text
+  created_at           DateTime       @default(now())
+  updated_at           DateTime       @updatedAt
+  version              Int            @default(1)
+
+  field                Field          @relation(fields: [field_id], references: [id], onDelete: Restrict)
+  planting_batch       PlantingBatch? @relation(fields: [planting_batch_id], references: [id], onDelete: SetNull)
+  recorded_by          User           @relation(fields: [recorded_by_user_id], references: [id], onDelete: Restrict)
+
+  @@index([farm_id, event_date])
+  @@index([field_id])
+  @@map("irrigation_events")
+}
+
+// ==========================================
+// 5. INVENTORY & IMMUTABLE STOCK LEDGER
+// ==========================================
+
+model InventoryItem {
+  id               String            @id @default(uuid()) @db.Char(36)
+  farm_id          String            @db.Char(36)
+  name             String            @db.VarChar(150)
+  code             String            @db.VarChar(50)
+  category         String            @db.VarChar(50) // SEED, FERTILIZER, PESTICIDE, FUEL, TOOL, PACKAGING, SUPPLY
+  default_unit     String            @default("KG") @db.VarChar(20)
+  reorder_level    Decimal           @default(0) @db.Decimal(14, 3)
+  current_balance  Decimal           @default(0) @db.Decimal(14, 3)
+  requires_expiry  Boolean           @default(false)
+  notes            String?           @db.Text
+  created_at       DateTime          @default(now())
+  updated_at       DateTime          @updatedAt
+  version          Int               @default(1)
+
+  farm             Farm              @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  receipt_lines    StockReceiptLine[]
+  issue_lines      StockIssueLine[]
+  adjustments      StockAdjustment[]
+  ledger_movements StockLedger[]
+  purchase_lines   PurchaseLine[]
+
+  @@unique([farm_id, code])
+  @@index([farm_id, category])
+  @@map("inventory_items")
+}
+
+model InventoryLocation {
+  id               String            @id @default(uuid()) @db.Char(36)
+  farm_id          String            @db.Char(36)
+  name             String            @db.VarChar(100)
+  code             String            @db.VarChar(50)
+  description      String?           @db.VarChar(255)
+  created_at       DateTime          @default(now())
+  updated_at       DateTime          @updatedAt
+
+  farm             Farm              @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  receipt_lines    StockReceiptLine[]
+  issue_lines      StockIssueLine[]
+  adjustments      StockAdjustment[]
+  ledger_movements StockLedger[]
+  produce_lots     ProduceLot[]
+
+  @@unique([farm_id, code])
+  @@map("inventory_locations")
+}
+
+model StockReceipt {
+  id                  String             @id @default(uuid()) @db.Char(36)
+  farm_id             String             @db.Char(36)
+  supplier_id         String?            @db.Char(36)
+  receipt_number      String             @db.VarChar(60)
+  receipt_date        DateTime           @db.Date
+  invoice_reference   String?            @db.VarChar(100)
+  total_amount        Decimal            @default(0) @db.Decimal(14, 2)
+  recorded_by_user_id String             @db.Char(36)
+  notes               String?            @db.Text
+  created_at          DateTime           @default(now())
+  updated_at          DateTime           @updatedAt
+  version             Int                @default(1)
+
+  farm                Farm               @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  supplier            Supplier?          @relation(fields: [supplier_id], references: [id], onDelete: SetNull)
+  recorded_by         User               @relation(fields: [recorded_by_user_id], references: [id], onDelete: Restrict)
+  lines               StockReceiptLine[]
+
+  @@unique([farm_id, receipt_number])
+  @@index([farm_id, receipt_date])
+  @@map("stock_receipts")
+}
+
+model StockReceiptLine {
+  id           String             @id @default(uuid()) @db.Char(36)
+  receipt_id   String             @db.Char(36)
+  item_id      String             @db.Char(36)
+  location_id  String?            @db.Char(36)
+  quantity     Decimal            @db.Decimal(14, 3)
+  unit         String             @db.VarChar(20)
+  unit_cost    Decimal            @db.Decimal(14, 2)
+  total_cost   Decimal            @db.Decimal(14, 2)
+  batch_number String?            @db.VarChar(100)
+  expiry_date  DateTime?          @db.Date
+
+  receipt      StockReceipt       @relation(fields: [receipt_id], references: [id], onDelete: Cascade)
+  item         InventoryItem      @relation(fields: [item_id], references: [id], onDelete: Restrict)
+  location     InventoryLocation? @relation(fields: [location_id], references: [id], onDelete: SetNull)
+
+  @@index([receipt_id])
+  @@index([item_id])
+  @@map("stock_receipt_lines")
+}
+
+model StockIssue {
+  id                  String           @id @default(uuid()) @db.Char(36)
+  farm_id             String           @db.Char(36)
+  issue_number        String           @db.VarChar(60)
+  issue_date          DateTime         @db.Date
+  purpose             String           @db.VarChar(100)
+  field_id            String?          @db.Char(36)
+  planting_batch_id   String?          @db.Char(36)
+  task_id             String?          @db.Char(36)
+  issued_to_user_id   String?          @db.Char(36)
+  recorded_by_user_id String           @db.Char(36)
+  notes               String?          @db.Text
+  created_at          DateTime         @default(now())
+  updated_at          DateTime         @updatedAt
+  version             Int              @default(1)
+
+  farm                Farm             @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  field               Field?           @relation(fields: [field_id], references: [id], onDelete: SetNull)
+  planting_batch      PlantingBatch?   @relation(fields: [planting_batch_id], references: [id], onDelete: SetNull)
+  task                Task?            @relation(fields: [task_id], references: [id], onDelete: SetNull)
+  recorded_by         User             @relation(fields: [recorded_by_user_id], references: [id], onDelete: Restrict)
+  lines               StockIssueLine[]
+
+  @@unique([farm_id, issue_number])
+  @@index([farm_id, issue_date])
+  @@map("stock_issues")
+}
+
+model StockIssueLine {
+  id          String             @id @default(uuid()) @db.Char(36)
+  issue_id    String             @db.Char(36)
+  item_id     String             @db.Char(36)
+  location_id String?            @db.Char(36)
+  quantity    Decimal            @db.Decimal(14, 3)
+  unit        String             @db.VarChar(20)
+  unit_cost   Decimal            @default(0) @db.Decimal(14, 2)
+  total_cost  Decimal            @default(0) @db.Decimal(14, 2)
+
+  issue       StockIssue         @relation(fields: [issue_id], references: [id], onDelete: Cascade)
+  item        InventoryItem      @relation(fields: [item_id], references: [id], onDelete: Restrict)
+  location    InventoryLocation? @relation(fields: [location_id], references: [id], onDelete: SetNull)
+
+  @@index([issue_id])
+  @@index([item_id])
+  @@map("stock_issue_lines")
+}
+
+model StockAdjustment {
+  id                   String             @id @default(uuid()) @db.Char(36)
+  farm_id              String             @db.Char(36)
+  adjustment_number    String             @db.VarChar(60)
+  adjustment_date      DateTime           @db.Date
+  item_id              String             @db.Char(36)
+  location_id          String?            @db.Char(36)
+  old_quantity         Decimal            @db.Decimal(14, 3)
+  new_quantity         Decimal            @db.Decimal(14, 3)
+  difference_quantity  Decimal            @db.Decimal(14, 3)
+  reason               String             @db.VarChar(255)
+  approved_by_user_id  String?            @db.Char(36)
+  recorded_by_user_id  String             @db.Char(36)
+  created_at           DateTime           @default(now())
+  updated_at           DateTime           @updatedAt
+  version              Int                @default(1)
+
+  farm                 Farm               @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  item                 InventoryItem      @relation(fields: [item_id], references: [id], onDelete: Restrict)
+  location             InventoryLocation? @relation(fields: [location_id], references: [id], onDelete: SetNull)
+  recorded_by          User               @relation("RecordedAdjustments", fields: [recorded_by_user_id], references: [id], onDelete: Restrict)
+  approved_by          User?              @relation("ApprovedAdjustments", fields: [approved_by_user_id], references: [id], onDelete: SetNull)
+
+  @@unique([farm_id, adjustment_number])
+  @@index([farm_id, adjustment_date])
+  @@map("stock_adjustments")
+}
+
+model StockLedger {
+  id                  String             @id @default(uuid()) @db.Char(36)
+  farm_id             String             @db.Char(36)
+  item_id             String             @db.Char(36)
+  location_id         String?            @db.Char(36)
+  movement_type       String             @db.VarChar(30) // RECEIPT, ISSUE, ADJUSTMENT_ADD, ADJUSTMENT_SUBTRACT, TRANSFER
+  quantity            Decimal            @db.Decimal(14, 3)
+  running_balance     Decimal            @db.Decimal(14, 3)
+  reference_type      String             @db.VarChar(50)
+  reference_id        String             @db.Char(36)
+  recorded_by_user_id String?            @db.Char(36)
+  notes               String?            @db.VarChar(255)
+  created_at          DateTime           @default(now())
+
+  farm                Farm               @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  item                InventoryItem      @relation(fields: [item_id], references: [id], onDelete: Restrict)
+  location            InventoryLocation? @relation(fields: [location_id], references: [id], onDelete: SetNull)
+
+  @@index([farm_id, item_id, created_at])
+  @@index([reference_type, reference_id])
+  @@map("stock_ledger")
+}
+
+// ==========================================
+// 6. HARVEST & PRODUCE STORAGE
+// ==========================================
+
+model HarvestRecord {
+  id                  String            @id @default(uuid()) @db.Char(36)
+  farm_id             String            @db.Char(36)
+  planting_batch_id   String            @db.Char(36)
+  field_id            String            @db.Char(36)
+  harvest_date        DateTime          @db.Date
+  quantity            Decimal           @db.Decimal(14, 3)
+  unit                String            @default("KG") @db.VarChar(20)
+  quality_grade       String?           @db.VarChar(30)
+  harvested_by_users  String?           @db.VarChar(255)
+  labor_cost          Decimal?          @default(0) @db.Decimal(14, 2)
+  recorded_by_user_id String            @db.Char(36)
+  notes               String?           @db.Text
+  created_at          DateTime          @default(now())
+  updated_at          DateTime          @updatedAt
+  version             Int               @default(1)
+
+  farm                Farm              @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  planting_batch      PlantingBatch     @relation(fields: [planting_batch_id], references: [id], onDelete: Restrict)
+  field               Field             @relation(fields: [field_id], references: [id], onDelete: Restrict)
+  recorded_by         User              @relation(fields: [recorded_by_user_id], references: [id], onDelete: Restrict)
+  produce_lots        ProduceLot[]
+
+  @@index([farm_id, harvest_date])
+  @@index([planting_batch_id])
+  @@index([field_id])
+  @@map("harvest_records")
+}
+
+model ProduceLot {
+  id                  String             @id @default(uuid()) @db.Char(36)
+  farm_id             String             @db.Char(36)
+  harvest_record_id   String             @db.Char(36)
+  lot_number          String             @db.VarChar(60)
+  initial_quantity    Decimal            @db.Decimal(14, 3)
+  current_quantity    Decimal            @db.Decimal(14, 3)
+  unit                String             @default("KG") @db.VarChar(20)
+  storage_location_id String?            @db.Char(36)
+  quality_grade       String?            @db.VarChar(30)
+  status              String             @default("AVAILABLE") @db.VarChar(30)
+  created_at          DateTime           @default(now())
+  updated_at          DateTime           @updatedAt
+  version             Int                @default(1)
+
+  farm                Farm               @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  harvest_record      HarvestRecord      @relation(fields: [harvest_record_id], references: [id], onDelete: Cascade)
+  storage_location    InventoryLocation? @relation(fields: [storage_location_id], references: [id], onDelete: SetNull)
+  movements           ProduceMovement[]
+  sale_lines          SaleLine[]
+
+  @@unique([farm_id, lot_number])
+  @@index([farm_id, status])
+  @@map("produce_lots")
+}
+
+model ProduceMovement {
+  id                  String       @id @default(uuid()) @db.Char(36)
+  farm_id             String       @db.Char(36)
+  produce_lot_id      String       @db.Char(36)
+  destination         String       @db.VarChar(50) // STORAGE, DIRECT_SALE, PROCESSING, HOUSEHOLD_USE, WASTE
+  quantity            Decimal      @db.Decimal(14, 3)
+  unit                String       @db.VarChar(20)
+  movement_date       DateTime     @db.Date
+  recorded_by_user_id String?      @db.Char(36)
+  reference_type      String?      @db.VarChar(50)
+  reference_id        String?      @db.Char(36)
+  notes               String?      @db.Text
+  created_at          DateTime     @default(now())
+
+  farm                Farm         @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  produce_lot         ProduceLot   @relation(fields: [produce_lot_id], references: [id], onDelete: Cascade)
+
+  @@index([farm_id, destination])
+  @@index([produce_lot_id])
+  @@map("produce_movements")
+}
+
+// ==========================================
+// 7. COMMERCE (CUSTOMERS & SALES)
+// ==========================================
+
+model Customer {
+  id              String            @id @default(uuid()) @db.Char(36)
+  farm_id         String            @db.Char(36)
+  name            String            @db.VarChar(150)
+  phone           String?           @db.VarChar(50)
+  email           String?           @db.VarChar(191)
+  address         String?           @db.VarChar(255)
+  opening_balance Decimal           @default(0) @db.Decimal(14, 2)
+  current_balance Decimal           @default(0) @db.Decimal(14, 2)
+  notes           String?           @db.Text
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+  version         Int               @default(1)
+
+  farm            Farm              @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  sales           Sale[]
+  payments        CustomerPayment[]
+
+  @@index([farm_id, name])
+  @@map("customers")
+}
+
+model Sale {
+  id                    String            @id @default(uuid()) @db.Char(36)
+  farm_id               String            @db.Char(36)
+  customer_id           String            @db.Char(36)
+  invoice_number        String            @db.VarChar(60)
+  temporary_offline_ref String?           @db.VarChar(100)
+  sale_date             DateTime          @db.Date
+  due_date              DateTime?         @db.Date
+  total_amount          Decimal           @db.Decimal(14, 2)
+  discount_amount       Decimal           @default(0) @db.Decimal(14, 2)
+  paid_amount           Decimal           @default(0) @db.Decimal(14, 2)
+  payment_status        String            @default("PENDING") @db.VarChar(30)
+  notes                 String?           @db.Text
+  recorded_by_user_id   String            @db.Char(36)
+  created_at            DateTime          @default(now())
+  updated_at            DateTime          @updatedAt
+  version               Int               @default(1)
+
+  farm                  Farm              @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  customer              Customer          @relation(fields: [customer_id], references: [id], onDelete: Restrict)
+  recorded_by           User              @relation(fields: [recorded_by_user_id], references: [id], onDelete: Restrict)
+  lines                 SaleLine[]
+  payments              CustomerPayment[]
+
+  @@unique([farm_id, invoice_number])
+  @@index([farm_id, sale_date])
+  @@index([customer_id])
+  @@index([temporary_offline_ref])
+  @@map("sales")
+}
+
+model SaleLine {
+  id             String        @id @default(uuid()) @db.Char(36)
+  sale_id        String        @db.Char(36)
+  produce_lot_id String?       @db.Char(36)
+  crop_type_id   String?       @db.Char(36)
+  description    String        @db.VarChar(255)
+  quantity       Decimal       @db.Decimal(14, 3)
+  unit           String        @db.VarChar(20)
+  unit_price     Decimal       @db.Decimal(14, 2)
+  line_total     Decimal       @db.Decimal(14, 2)
+
+  sale           Sale          @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+  produce_lot    ProduceLot?   @relation(fields: [produce_lot_id], references: [id], onDelete: SetNull)
+  crop_type      CropType?     @relation(fields: [crop_type_id], references: [id], onDelete: SetNull)
+
+  @@index([sale_id])
+  @@index([produce_lot_id])
+  @@map("sale_lines")
+}
+
+model CustomerPayment {
+  id                  String   @id @default(uuid()) @db.Char(36)
+  farm_id             String   @db.Char(36)
+  customer_id         String   @db.Char(36)
+  sale_id             String?  @db.Char(36)
+  payment_number      String   @db.VarChar(60)
+  payment_date        DateTime @db.Date
+  amount              Decimal  @db.Decimal(14, 2)
+  payment_method      String   @db.VarChar(50)
+  reference_code      String?  @db.VarChar(100)
+  received_by_user_id String   @db.Char(36)
+  notes               String?  @db.Text
+  created_at          DateTime @default(now())
+
+  farm                Farm     @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  customer            Customer @relation(fields: [customer_id], references: [id], onDelete: Restrict)
+  sale                Sale?    @relation(fields: [sale_id], references: [id], onDelete: SetNull)
+  received_by         User     @relation(fields: [received_by_user_id], references: [id], onDelete: Restrict)
+
+  @@unique([farm_id, payment_number])
+  @@index([farm_id, payment_date])
+  @@index([customer_id])
+  @@map("customer_payments")
+}
+
+// ==========================================
+// 8. PROCUREMENT (SUPPLIERS & PURCHASES)
+// ==========================================
+
+model Supplier {
+  id              String            @id @default(uuid()) @db.Char(36)
+  farm_id         String            @db.Char(36)
+  name            String            @db.VarChar(150)
+  contact_person  String?           @db.VarChar(100)
+  phone           String?           @db.VarChar(50)
+  email           String?           @db.VarChar(191)
+  address         String?           @db.VarChar(255)
+  opening_balance Decimal           @default(0) @db.Decimal(14, 2)
+  current_balance Decimal           @default(0) @db.Decimal(14, 2)
+  notes           String?           @db.Text
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+  version         Int               @default(1)
+
+  farm            Farm              @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  purchases       Purchase[]
+  payments        SupplierPayment[]
+  stock_receipts  StockReceipt[]
+
+  @@index([farm_id, name])
+  @@map("suppliers")
+}
+
+model Purchase {
+  id                  String            @id @default(uuid()) @db.Char(36)
+  farm_id             String            @db.Char(36)
+  supplier_id         String            @db.Char(36)
+  purchase_number     String            @db.VarChar(60)
+  invoice_reference   String?           @db.VarChar(100)
+  purchase_date       DateTime          @db.Date
+  total_amount        Decimal           @db.Decimal(14, 2)
+  paid_amount         Decimal           @default(0) @db.Decimal(14, 2)
+  payment_status      String            @default("PENDING") @db.VarChar(30)
+  notes               String?           @db.Text
+  recorded_by_user_id String            @db.Char(36)
+  created_at          DateTime          @default(now())
+  updated_at          DateTime          @updatedAt
+  version             Int               @default(1)
+
+  farm                Farm              @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  supplier            Supplier          @relation(fields: [supplier_id], references: [id], onDelete: Restrict)
+  recorded_by         User              @relation(fields: [recorded_by_user_id], references: [id], onDelete: Restrict)
+  lines               PurchaseLine[]
+  payments            SupplierPayment[]
+
+  @@unique([farm_id, purchase_number])
+  @@index([farm_id, purchase_date])
+  @@index([supplier_id])
+  @@map("purchases")
+}
+
+model PurchaseLine {
+  id          String        @id @default(uuid()) @db.Char(36)
+  purchase_id String        @db.Char(36)
+  item_id     String?       @db.Char(36)
+  description String        @db.VarChar(255)
+  quantity    Decimal       @db.Decimal(14, 3)
+  unit        String        @db.VarChar(20)
+  unit_price  Decimal       @db.Decimal(14, 2)
+  line_total  Decimal       @db.Decimal(14, 2)
+
+  purchase    Purchase      @relation(fields: [purchase_id], references: [id], onDelete: Cascade)
+  item        InventoryItem? @relation(fields: [item_id], references: [id], onDelete: SetNull)
+
+  @@index([purchase_id])
+  @@index([item_id])
+  @@map("purchase_lines")
+}
+
+model SupplierPayment {
+  id               String   @id @default(uuid()) @db.Char(36)
+  farm_id          String   @db.Char(36)
+  supplier_id      String   @db.Char(36)
+  purchase_id      String?  @db.Char(36)
+  payment_number   String   @db.VarChar(60)
+  payment_date     DateTime @db.Date
+  amount           Decimal  @db.Decimal(14, 2)
+  payment_method   String   @db.VarChar(50)
+  reference_code   String?  @db.VarChar(100)
+  paid_by_user_id  String   @db.Char(36)
+  notes            String?  @db.Text
+  created_at       DateTime @default(now())
+
+  farm             Farm     @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  supplier         Supplier @relation(fields: [supplier_id], references: [id], onDelete: Restrict)
+  purchase         Purchase? @relation(fields: [purchase_id], references: [id], onDelete: SetNull)
+  paid_by          User     @relation(fields: [paid_by_user_id], references: [id], onDelete: Restrict)
+
+  @@unique([farm_id, payment_number])
+  @@index([farm_id, payment_date])
+  @@index([supplier_id])
+  @@map("supplier_payments")
+}
+
+// ==========================================
+// 9. EXPENSES & CASH TRANSACTIONS
+// ==========================================
+
+model ExpenseCategory {
+  id          String    @id @default(uuid()) @db.Char(36)
+  farm_id     String    @db.Char(36)
+  name        String    @db.VarChar(100)
+  description String?   @db.VarChar(255)
+  is_active   Boolean   @default(true)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  farm        Farm      @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  expenses    Expense[]
+
+  @@unique([farm_id, name])
+  @@map("expense_categories")
+}
+
+model Expense {
+  id                     String          @id @default(uuid()) @db.Char(36)
+  farm_id                String          @db.Char(36)
+  category_id            String          @db.Char(36)
+  field_id               String?         @db.Char(36)
+  planting_batch_id      String?         @db.Char(36)
+  season_id              String?         @db.Char(36)
+  expense_date           DateTime        @db.Date
+  amount                 Decimal         @db.Decimal(14, 2)
+  payment_method         String          @db.VarChar(50)
+  vendor_name            String?         @db.VarChar(150)
+  description            String?         @db.Text
+  receipt_attachment_url String?         @db.VarChar(255)
+  recorded_by_user_id    String          @db.Char(36)
+  created_at             DateTime        @default(now())
+  updated_at             DateTime        @updatedAt
+  version                Int             @default(1)
+
+  farm                   Farm            @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  category               ExpenseCategory @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  field                  Field?          @relation(fields: [field_id], references: [id], onDelete: SetNull)
+  planting_batch         PlantingBatch?  @relation(fields: [planting_batch_id], references: [id], onDelete: SetNull)
+  season                 Season?         @relation(fields: [season_id], references: [id], onDelete: SetNull)
+  recorded_by            User            @relation(fields: [recorded_by_user_id], references: [id], onDelete: Restrict)
+
+  @@index([farm_id, expense_date])
+  @@index([category_id])
+  @@index([field_id])
+  @@index([planting_batch_id])
+  @@map("expenses")
+}
+
+model CashAccount {
+  id              String            @id @default(uuid()) @db.Char(36)
+  farm_id         String            @db.Char(36)
+  name            String            @db.VarChar(100)
+  account_type    String            @db.VarChar(50) // CASH, BANK, MOBILE_MONEY
+  current_balance Decimal           @default(0) @db.Decimal(14, 2)
+  currency        String            @default("USD") @db.VarChar(10)
+  is_active       Boolean           @default(true)
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+
+  farm            Farm              @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  transactions    CashTransaction[]
+
+  @@unique([farm_id, name])
+  @@map("cash_accounts")
+}
+
+model CashTransaction {
+  id                  String      @id @default(uuid()) @db.Char(36)
+  farm_id             String      @db.Char(36)
+  cash_account_id     String      @db.Char(36)
+  transaction_type    String      @db.VarChar(30) // INFLOW, OUTFLOW
+  amount              Decimal     @db.Decimal(14, 2)
+  running_balance     Decimal     @db.Decimal(14, 2)
+  reference_type      String?     @db.VarChar(50)
+  reference_id        String?     @db.Char(36)
+  transaction_date    DateTime    @db.Date
+  recorded_by_user_id String?     @db.Char(36)
+  notes               String?     @db.Text
+  created_at          DateTime    @default(now())
+
+  farm                Farm        @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  cash_account        CashAccount @relation(fields: [cash_account_id], references: [id], onDelete: Restrict)
+
+  @@index([farm_id, cash_account_id, transaction_date])
+  @@index([reference_type, reference_id])
+  @@map("cash_transactions")
+}
+
+// ==========================================
+// 10. PLATFORM: SYNC, CONFLICTS, AUDIT & ATTACHMENTS
+// ==========================================
+
+model SyncOperation {
+  id             String   @id @default(uuid()) @db.Char(36)
+  farm_id        String   @db.Char(36)
+  device_id      String   @db.VarChar(128)
+  operation_id   String   @unique @db.VarChar(128)
+  entity_type    String   @db.VarChar(50)
+  entity_id      String   @db.Char(36)
+  operation_type String   @db.VarChar(20) // CREATE, UPDATE, DELETE
+  payload_json   String   @db.Text
+  base_version   Int      @default(1)
+  status         String   @default("PENDING") @db.VarChar(30)
+  error_message  String?  @db.Text
+  synced_at      DateTime?
+  created_at     DateTime @default(now())
+
+  farm           Farm     @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+
+  @@index([farm_id, device_id, status])
+  @@index([entity_type, entity_id])
+  @@map("sync_operations")
+}
+
+model SyncConflict {
+  id                 String    @id @default(uuid()) @db.Char(36)
+  farm_id            String    @db.Char(36)
+  device_id          String    @db.VarChar(128)
+  operation_id       String    @db.VarChar(128)
+  entity_type        String    @db.VarChar(50)
+  entity_id          String    @db.Char(36)
+  client_data_json   String    @db.Text
+  server_data_json   String    @db.Text
+  resolved           Boolean   @default(false)
+  resolved_by_user_id String?  @db.Char(36)
+  resolution_choice  String?   @db.VarChar(30) // CLIENT_WINS, SERVER_WINS, MERGED
+  resolved_at        DateTime?
+  created_at         DateTime  @default(now())
+
+  farm               Farm      @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+
+  @@index([farm_id, resolved])
+  @@map("sync_conflicts")
+}
+
+model AuditLog {
+  id               String   @id @default(uuid()) @db.Char(36)
+  farm_id          String   @db.Char(36)
+  user_id          String?  @db.Char(36)
+  action           String   @db.VarChar(100)
+  entity_type      String   @db.VarChar(50)
+  entity_id        String?  @db.Char(36)
+  old_values_json  String?  @db.Text
+  new_values_json  String?  @db.Text
+  ip_address       String?  @db.VarChar(45)
+  user_agent       String?  @db.VarChar(255)
+  created_at       DateTime @default(now())
+
+  farm             Farm     @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+  user             User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([farm_id, entity_type, entity_id])
+  @@index([farm_id, created_at])
+  @@map("audit_logs")
+}
+
+model Attachment {
+  id                  String   @id @default(uuid()) @db.Char(36)
+  farm_id             String   @db.Char(36)
+  entity_type         String   @db.VarChar(50)
+  entity_id           String   @db.Char(36)
+  file_name           String   @db.VarChar(255)
+  file_path           String   @db.VarChar(255)
+  file_size           Int
+  mime_type           String   @db.VarChar(100)
+  uploaded_by_user_id String   @db.Char(36)
+  created_at          DateTime @default(now())
+
+  farm                Farm     @relation(fields: [farm_id], references: [id], onDelete: Cascade)
+
+  @@index([farm_id, entity_type, entity_id])
+  @@map("attachments")
+}
