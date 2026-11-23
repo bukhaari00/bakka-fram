@@ -1,6 +1,6 @@
-// Bakka Farm Management System - MySQL 8 Prisma Schema
+// Bakka Farm Management System - Neon PostgreSQL Prisma Schema
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
