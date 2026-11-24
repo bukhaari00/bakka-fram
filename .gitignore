@@ -12,6 +12,14 @@ out/
 build/
 dist/
 
+# Environment variables
+.env
+.env.*
+!.env.example
+*.env
+*.env.*
+!*.env.example
+
 # Production
 .env.local
 .env.development.local
