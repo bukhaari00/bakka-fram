@@ -8,11 +8,12 @@ const nextConfig = {
     ignoreDuringBuilds: true
   },
   async rewrites() {
-    const apiPort = process.env.INTERNAL_API_PORT || '5001';
+    const remoteApi = process.env.NEXT_PUBLIC_API_URL || 'https://web-production-616215f8.up.railway.app/api';
+    const baseUrl = remoteApi.trim().replace(/\/+$/, '');
     return [
       {
         source: '/api/:path*',
-        destination: `http://127.0.0.1:${apiPort}/api/:path*`
+        destination: `${baseUrl}/:path*`
       }
     ];
   }

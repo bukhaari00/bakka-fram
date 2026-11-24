@@ -121,11 +121,17 @@ export function AppShell({ children, userRole, userName }: AppShellProps) {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#f8faf8] flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-[#f8faf8] flex flex-col items-center justify-center p-4 text-center">
         <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mb-3" />
-        <p className="text-gray-600 font-medium text-sm">
-          {locale === 'so' ? 'Waxaad u gudbaysaa bogga gelitaanka (Login)...' : 'Redirecting to login...'}
+        <p className="text-gray-600 font-medium text-sm mb-3">
+          {locale === 'so' ? 'Fadlan gal nidaamka si aad u aragto xogta beerta.' : 'Please sign in to access Bakka Farm.'}
         </p>
+        <Link
+          href="/login"
+          className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-sm font-bold shadow-md transition-all"
+        >
+          {locale === 'so' ? 'Gal Hadda (Sign In)' : 'Sign In Now'}
+        </Link>
       </div>
     );
   }
