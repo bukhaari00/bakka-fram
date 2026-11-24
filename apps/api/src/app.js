@@ -16,6 +16,7 @@ import { createInventoryRouter } from './modules/inventory/inventory.routes.js';
 import { createHarvestRouter } from './modules/harvest/harvest.routes.js';
 import { createFinanceRouter } from './modules/finance/finance.routes.js';
 import { createReportsRouter } from './modules/reports/reports.routes.js';
+import { renderPortalHtml } from './modules/portal/portal.html.js';
 
 export function createApp(prisma) {
   const app = express();
@@ -84,6 +85,9 @@ export function createApp(prisma) {
   app.use('/api/harvest', createHarvestRouter(prisma));
   app.use('/api/finance', createFinanceRouter(prisma));
   app.use('/api/reports', createReportsRouter(prisma));
+
+  // Web Portal UI (Instant Login & Signup web interface on /)
+  app.get(['/', '/login', '/signup', '/portal'], renderPortalHtml);
 
   // Centralized Error Handler
   app.use(errorHandler);

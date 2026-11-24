@@ -1,1 +1,1 @@
-web: node scripts/start-production.js
+web: node apps/api/src/server.js
