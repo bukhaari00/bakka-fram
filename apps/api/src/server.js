@@ -8,9 +8,10 @@ const prisma = new PrismaClient({
 
 const app = createApp(prisma);
 
-const server = app.listen(config.port, () => {
-  console.log(`[Bakka Farm API] Server listening on port ${config.port} (${config.env})`);
-  console.log(`[Bakka Farm API] Health check at http://localhost:${config.port}/health and /api/health`);
+const host = process.env.HOST || '0.0.0.0';
+const server = app.listen(config.port, host, () => {
+  console.log(`[Bakka Farm API] Server listening on http://${host}:${config.port} (${config.env})`);
+  console.log(`[Bakka Farm API] Health check at http://${host}:${config.port}/health and /api/health`);
 });
 
 // Graceful shutdown
