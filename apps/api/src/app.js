@@ -62,11 +62,10 @@ export function createApp(prisma) {
     } catch (e) {
       dbStatus = 'disconnected';
     }
-    const isHealthy = dbStatus === 'connected';
-    return res.status(isHealthy ? 200 : 503).json({
-      success: isHealthy,
+    return res.status(200).json({
+      success: true,
       data: {
-        status: isHealthy ? 'healthy' : 'degraded',
+        status: dbStatus === 'connected' ? 'healthy' : 'degraded',
         database: dbStatus,
         system: 'Bakka Farm Management API',
         environment: config.env,
