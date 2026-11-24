@@ -83,20 +83,27 @@ export function AppShell({ children, userRole, userName }: AppShellProps) {
 
   const navItems = [
     { href: '/', label: t.navDashboard, icon: LayoutDashboard },
-    { href: '/fields', label: t.navFields, icon: MapPin },
-    { href: '/seasons', label: t.navSeasons, icon: Calendar },
-    { href: '/crops', label: t.navCrops, icon: Sprout },
-    { href: '/tasks', label: t.navTasks, icon: CheckSquare },
-    { href: '/irrigation', label: t.navIrrigation, icon: Droplets },
-    { href: '/inventory', label: t.navInventory, icon: Package },
-    { href: '/harvest', label: t.navHarvest, icon: Boxes },
-    { href: '/sales', label: t.navSales, icon: ShoppingBag },
-    { href: '/expenses', label: t.navExpenses, icon: CreditCard },
-    { href: '/reports', label: t.navReports, icon: BarChart3 },
-    { href: '/student', label: locale === 'so' ? 'Barta Ardayga' : 'Student Portal', icon: GraduationCap },
-    { href: '/staff', label: locale === 'so' ? 'Maamulka Users' : 'Users & Staff', icon: Users, adminOnly: true },
-    { href: '/settings', label: t.navSettings, icon: Settings, adminOnly: true }
+    { href: '/student', label: locale === 'so' ? 'Barta Ardayga' : 'Student Portal', icon: GraduationCap, roles: ['STUDENT', 'ADMIN', 'STAFF', 'MANAGER'] },
+    { href: '/crops', label: t.navCrops, icon: Sprout, roles: ['ADMIN', 'MANAGER', 'STAFF', 'STUDENT', 'CUSTOMER'] },
+    { href: '/tasks', label: t.navTasks, icon: CheckSquare, roles: ['ADMIN', 'MANAGER', 'STAFF', 'STUDENT'] },
+    { href: '/fields', label: t.navFields, icon: MapPin, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
+    { href: '/seasons', label: t.navSeasons, icon: Calendar, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
+    { href: '/irrigation', label: t.navIrrigation, icon: Droplets, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
+    { href: '/inventory', label: t.navInventory, icon: Package, roles: ['ADMIN', 'MANAGER', 'STAFF'] },
+    { href: '/harvest', label: t.navHarvest, icon: Boxes, roles: ['ADMIN', 'MANAGER', 'STAFF', 'CUSTOMER'] },
+    { href: '/sales', label: t.navSales, icon: ShoppingBag, roles: ['ADMIN', 'MANAGER', 'STAFF', 'CUSTOMER', 'ACCOUNTANT'] },
+    { href: '/expenses', label: t.navExpenses, icon: CreditCard, roles: ['ADMIN', 'MANAGER', 'ACCOUNTANT'] },
+    { href: '/reports', label: t.navReports, icon: BarChart3, roles: ['ADMIN', 'MANAGER', 'STAFF', 'ACCOUNTANT'] },
+    { href: '/staff', label: locale === 'so' ? 'Maamulka Users' : 'Users & Staff', icon: Users, adminOnly: true, roles: ['ADMIN'] },
+    { href: '/settings', label: t.navSettings, icon: Settings, adminOnly: true, roles: ['ADMIN'] }
   ];
+
+  const isNavVisible = (item: typeof navItems[0]) => {
+    if (activeRole === 'ADMIN') return true;
+    if (item.adminOnly && activeRole !== 'ADMIN') return false;
+    if (item.roles && !item.roles.includes(activeRole)) return false;
+    return true;
+  };
 
   const displayName = user?.fullName || userName || 'Bakka Farm System';
   const displayRole = user?.roleName || activeRole;
@@ -145,21 +152,23 @@ export function AppShell({ children, userRole, userName }: AppShellProps) {
               {displayRole}
             </span>
           </div>
-          <div className="pt-1">
-            <label className="text-[10px] text-emerald-400 block mb-0.5 font-medium">Switch Role View (RBAC):</label>
-            <select
-              value={activeRole}
-              onChange={(e) => handleRoleChange(e.target.value)}
-              className="w-full bg-emerald-900/90 text-emerald-200 border border-emerald-700 rounded px-2 py-1 text-[11px] font-medium focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer"
-              title="Switch role view for testing RBAC"
-            >
-              {ROLES_LIST.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          {user?.roleName === 'ADMIN' && (
+            <div className="pt-1">
+              <label className="text-[10px] text-emerald-400 block mb-0.5 font-medium">Switch Role View (RBAC):</label>
+              <select
+                value={activeRole}
+                onChange={(e) => handleRoleChange(e.target.value)}
+                className="w-full bg-emerald-900/90 text-emerald-200 border border-emerald-700 rounded px-2 py-1 text-[11px] font-medium focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer"
+                title="Switch role view for testing RBAC"
+              >
+                {ROLES_LIST.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Navigation Links */}
@@ -167,7 +176,7 @@ export function AppShell({ children, userRole, userName }: AppShellProps) {
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href;
-            if (item.adminOnly && activeRole !== 'ADMIN') return null;
+            if (!isNavVisible(item)) return null;
 
             return (
               <Link
@@ -211,40 +220,42 @@ export function AppShell({ children, userRole, userName }: AppShellProps) {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <header className="h-14 bg-white border-b border-gray-200 px-4 flex items-center justify-between sticky top-0 z-20 shadow-sm">
-          <div className="flex items-center gap-3">
+        <header className="h-14 bg-white border-b border-gray-200 px-3 sm:px-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-emerald-800 bg-emerald-700 text-white text-xs font-semibold hover:bg-emerald-800 transition-colors"
+              className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg border border-emerald-800 bg-emerald-700 text-white text-xs font-semibold hover:bg-emerald-800 transition-colors shadow-sm active:scale-95"
               aria-label="Toggle Navigation"
             >
               {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-              <span>{mobileMenuOpen ? 'Close' : 'Menu / Qaybaha'}</span>
+              <span>{mobileMenuOpen ? 'Close' : 'Qaybaha'}</span>
             </button>
-            <Link href="/" className="font-bold text-emerald-950 text-sm hidden sm:inline flex items-center gap-2">
-              <span>🌾</span>
-              <span>{t.appTitle}</span>
+            <Link href="/" className="font-bold text-emerald-950 text-sm flex items-center gap-1.5">
+              <span className="text-base">🌾</span>
+              <span className="hidden xs:inline font-extrabold tracking-tight">BAKKA FARM</span>
             </Link>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <LanguageToggle />
-            <SyncStatusIndicator />
+            <div className="hidden sm:inline-flex">
+              <SyncStatusIndicator />
+            </div>
 
             {/* Quick Auth Status Indicator */}
             {isAuthenticated ? (
               <button
                 onClick={() => logout()}
-                className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 hover:bg-red-50 hover:text-red-700 text-xs font-medium transition-colors"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 hover:bg-red-50 hover:text-red-700 text-xs font-medium transition-colors"
                 title="Log Out"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span className="truncate max-w-[120px]">{user?.username || 'Logout'}</span>
+                <span className="hidden sm:inline truncate max-w-[120px]">{user?.username || 'Logout'}</span>
               </button>
             ) : (
               <Link
                 href="/login"
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold transition-colors"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold transition-colors"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Sign In</span>
@@ -253,86 +264,69 @@ export function AppShell({ children, userRole, userName }: AppShellProps) {
           </div>
         </header>
 
-        {/* Mobile / Narrow Screen Horizontal Module Navigation Bar */}
-        <div className="md:hidden bg-[#1f4127] text-white px-3 py-2 border-b border-emerald-950 flex items-center gap-1.5 overflow-x-auto scrollbar-none shadow-inner">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = pathname === item.href;
-            if (item.adminOnly && activeRole !== 'ADMIN') return null;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs whitespace-nowrap font-medium transition-colors ${
-                  active
-                    ? 'bg-emerald-600 text-white font-bold shadow-sm'
-                    : 'text-emerald-200 hover:bg-emerald-800'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5 text-emerald-300 flex-shrink-0" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* Mobile Navigation Drawer Full Panel */}
+        {/* Mobile Navigation Drawer Overlay */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-[#1f4127] text-white p-4 space-y-3 border-b border-emerald-950 shadow-xl animate-fadeIn">
-            <div className="p-3 bg-emerald-950/80 rounded-xl space-y-2">
+          <div className="md:hidden bg-[#17321d] text-white p-4 space-y-3 border-b border-emerald-950 shadow-2xl z-20 animate-fadeIn">
+            <div className="p-3 bg-emerald-950/90 rounded-xl border border-emerald-800/80 space-y-2">
               <div className="flex justify-between items-center text-xs">
-                <span className="font-bold text-emerald-100">{displayName}</span>
-                <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-800 text-emerald-200 font-bold">
+                <span className="font-bold text-emerald-50 truncate max-w-[180px]">{displayName}</span>
+                <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-800 text-emerald-200 font-bold border border-emerald-700">
                   {displayRole}
                 </span>
               </div>
-              <div>
-                <label className="block text-[11px] text-emerald-300 font-medium mb-1">Testing Role (RBAC):</label>
-                <select
-                  value={activeRole}
-                  onChange={(e) => handleRoleChange(e.target.value)}
-                  className="w-full bg-emerald-900 text-emerald-100 border border-emerald-700 rounded p-1.5 text-xs font-semibold"
-                >
-                  {ROLES_LIST.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {user?.roleName === 'ADMIN' && (
+                <div>
+                  <label className="block text-[10px] text-emerald-400 font-medium mb-1">Switch Testing Role (RBAC):</label>
+                  <select
+                    value={activeRole}
+                    onChange={(e) => handleRoleChange(e.target.value)}
+                    className="w-full bg-emerald-900 text-emerald-100 border border-emerald-700 rounded p-1.5 text-xs font-semibold"
+                  >
+                    {ROLES_LIST.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-2 gap-2">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const active = pathname === item.href;
-                if (item.adminOnly && activeRole !== 'ADMIN') return null;
+                if (!isNavVisible(item)) return null;
+
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium ${
-                      active ? 'bg-emerald-600 text-white font-bold' : 'text-emerald-100 hover:bg-emerald-800'
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition-colors ${
+                      active ? 'bg-emerald-600 text-white font-bold shadow-sm' : 'text-emerald-100 bg-emerald-900/60 hover:bg-emerald-800'
                     }`}
                   >
-                    <Icon className="w-4 h-4 text-emerald-300" />
-                    <span>{item.label}</span>
+                    <Icon className="w-4 h-4 text-emerald-300 flex-shrink-0" />
+                    <span className="truncate">{item.label}</span>
                   </Link>
                 );
               })}
             </div>
 
-            <div className="pt-2 border-t border-emerald-800/80">
+            <div className="pt-2 border-t border-emerald-800/80 flex items-center justify-between">
+              <div className="sm:hidden">
+                <SyncStatusIndicator />
+              </div>
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
                   logout();
                 }}
-                className="flex items-center gap-2 w-full p-2 text-xs text-red-300 hover:bg-red-900/40 rounded-lg font-semibold"
+                className="flex items-center justify-center gap-2 w-full p-2.5 text-xs text-red-200 bg-red-950/60 border border-red-800/60 hover:bg-red-900/60 rounded-lg font-bold"
               >
                 <LogOut className="w-4 h-4" />
-                <span>Log Out</span>
+                <span>Ka Bax (Sign Out)</span>
               </button>
             </div>
           </div>

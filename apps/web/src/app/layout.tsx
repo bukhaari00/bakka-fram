@@ -1,8 +1,15 @@
 import React from 'react';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { I18nProvider } from '../lib/i18n/I18nContext';
 import { AuthProvider } from '../lib/auth/AuthContext';
 import './globals.css';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#1f4127'
+};
 
 export const metadata: Metadata = {
   title: 'Bakka Farm Management System',
