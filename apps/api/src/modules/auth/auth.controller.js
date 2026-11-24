@@ -19,7 +19,8 @@ const registerSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters').regex(/^[a-zA-Z0-9_.-]+$/, 'Username can only contain alphanumeric characters, dots, underscores, or dashes'),
   phone: z.string().min(6, 'Please enter a valid phone number'),
   password: z.string().min(6, 'Password must be at least 6 characters long'),
-  confirmPassword: z.string().min(6, 'Please confirm your password')
+  confirmPassword: z.string().min(6, 'Please confirm your password'),
+  role: z.string().optional()
 }).refine(data => data.password === data.confirmPassword, {
   message: 'Passwords do not match',
   path: ['confirmPassword']

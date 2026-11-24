@@ -90,7 +90,18 @@ export function requireRole(...allowedRoles) {
       return next(new AppError('Unauthorized', 401));
     }
 
-    if (!allowedRoles.includes(req.user.roleName)) {
+    // Admin has superuser authority across all protected role endpoints
+    if (req.user.roleName === 'ADMIN') {
+      return next();
+    }
+
+    // Support MANAGER alias for FARM_MANAGER
+    const userRole = req.user.roleName;
+    const isAllowed = allowedRoles.includes(userRole) ||
+      (userRole === 'FARM_MANAGER' && allowedRoles.includes('MANAGER')) ||
+      (userRole === 'MANAGER' && allowedRoles.includes('FARM_MANAGER'));
+
+    if (!isAllowed) {
       return next(new AppError(`Forbidden: Role [${req.user.roleName}] is not permitted for this action`, 403));
     }
 

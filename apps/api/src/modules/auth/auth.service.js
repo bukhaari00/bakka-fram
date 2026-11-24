@@ -142,10 +142,10 @@ export class AuthService {
    * User Registration System
    * - Validates all fields
    * - Prevents duplicate email and usernames
-   * - Hashes password using Argon2id/bcrypt
-   * - New users default to STUDENT role
+   * - Hashes password using Argon2id
+   * - Prevents public ADMIN/MANAGER creation (defaults to STUDENT or CUSTOMER)
    */
-  async register({ fullName, email, username, phone, password, req }) {
+  async register({ fullName, email, username, phone, password, role, req }) {
     const cleanEmail = email.toLowerCase().trim();
     const cleanUsername = username ? username.toLowerCase().trim() : cleanEmail.split('@')[0];
 
@@ -171,8 +171,12 @@ export class AuthService {
     const passwordHash = await hashPassword(password);
     const userId = uuidv4();
 
-    // Default role is STUDENT
-    const roleName = ROLES.STUDENT;
+    // Default role is STUDENT. Public registration may also select CUSTOMER.
+    // Public registration CANNOT create ADMIN, MANAGER, or STAFF.
+    let roleName = ROLES.STUDENT;
+    if (role && role.toUpperCase().trim() === 'CUSTOMER') {
+      roleName = ROLES.CUSTOMER;
+    }
 
     const user = await this.prisma.user.create({
       data: {

@@ -54,13 +54,24 @@ export function createApp(prisma) {
     }
   });
 
-  // Health check endpoint
-  app.get('/api/health', (req, res) => {
-    return successResponse(res, {
-      status: 'healthy',
-      system: 'Bakka Farm Management API',
-      timestamp: new Date().toISOString(),
-      offlineReady: true
+  // Health check endpoint (compatible with Railway, Vercel, Docker & orchestrators)
+  app.get(['/health', '/api/health'], async (req, res) => {
+    let dbStatus = 'connected';
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch (e) {
+      dbStatus = 'disconnected';
+    }
+    const isHealthy = dbStatus === 'connected';
+    return res.status(isHealthy ? 200 : 503).json({
+      success: isHealthy,
+      data: {
+        status: isHealthy ? 'healthy' : 'degraded',
+        database: dbStatus,
+        system: 'Bakka Farm Management API',
+        environment: config.env,
+        timestamp: new Date().toISOString()
+      }
     });
   });
 

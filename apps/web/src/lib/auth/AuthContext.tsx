@@ -39,7 +39,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   isAdmin: boolean;
+  isManager: boolean;
   isStaff: boolean;
+  isCustomer: boolean;
   isStudent: boolean;
   login: (identifier: string, password: string, rememberMe?: boolean) => Promise<LoginResult>;
   register: (data: RegisterData) => Promise<LoginResult>;
@@ -75,12 +77,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(JSON.parse(savedUser));
         setToken(savedToken);
       } else {
-        // Default initial session for immediate access
-        setUser(DEFAULT_ADMIN_USER);
-        setToken('dev-admin-session-token');
+        setUser(null);
+        setToken(null);
       }
     } catch (e) {
-      setUser(DEFAULT_ADMIN_USER);
+      setUser(null);
+      setToken(null);
     } finally {
       setIsLoading(false);
     }
@@ -149,20 +151,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: true, user: userData };
       }
 
-      // Safe offline development credentials fallback
-      if (identifier.toLowerCase().includes('admin') || identifier.toLowerCase().includes('bakka')) {
-        const fallbackUser: AuthUser = { ...DEFAULT_ADMIN_USER, username: identifier };
-        setUser(fallbackUser);
-        setToken('dev-fallback-token');
-        localStorage.setItem('bakka_auth_user', JSON.stringify(fallbackUser));
-        setIsLoading(false);
-        return { success: true, user: fallbackUser };
-      }
-
       setIsLoading(false);
       return {
         success: false,
-        error: offlineResult.error || 'Cannot connect to authentication server. Please check your network.'
+        error: offlineResult.error || 'Cannot connect to authentication server. Please check your network or verify the backend is online.'
       };
     }
   };
@@ -206,24 +198,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
       return { success: true, user: userData };
     } catch (networkErr: any) {
-      // Offline student account creation simulation
-      const offlineUser: AuthUser = {
-        id: `u-${Date.now()}`,
-        fullName: data.fullName,
-        email: data.email,
-        username: data.username,
-        phone: data.phone,
-        roleName: 'STUDENT',
-        permissions: ['student:view', 'tasks:view_assigned']
-      };
-
-      setUser(offlineUser);
-      setToken('local-registered-token');
-      localStorage.setItem('bakka_auth_user', JSON.stringify(offlineUser));
-      localStorage.setItem('bakka_active_role', 'STUDENT');
-
       setIsLoading(false);
-      return { success: true, user: offlineUser };
+      return {
+        success: false,
+        error: 'Unable to connect to the registration server. Please ensure the backend is running and try again.'
+      };
     }
   };
 
@@ -257,7 +236,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const isAdmin = user?.roleName === 'ADMIN';
-  const isStaff = user?.roleName === 'STAFF' || user?.roleName === 'ADMIN' || user?.roleName === 'FARM_MANAGER' || user?.roleName === 'FIELD_SUPERVISOR';
+  const isManager = user?.roleName === 'MANAGER' || user?.roleName === 'FARM_MANAGER' || user?.roleName === 'ADMIN';
+  const isStaff = user?.roleName === 'STAFF' || user?.roleName === 'ADMIN' || user?.roleName === 'FARM_MANAGER' || user?.roleName === 'MANAGER' || user?.roleName === 'FIELD_SUPERVISOR';
+  const isCustomer = user?.roleName === 'CUSTOMER';
   const isStudent = user?.roleName === 'STUDENT';
 
   return (
@@ -268,7 +249,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!user,
         isLoading,
         isAdmin,
+        isManager,
         isStaff,
+        isCustomer,
         isStudent,
         login,
         register,

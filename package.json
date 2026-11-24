@@ -9,6 +9,7 @@
   ],
   "type": "module",
   "scripts": {
+    "start": "node apps/api/src/server.js",
     "dev": "node scripts/dev.js",
     "dev:api": "npm --workspace=apps/api run dev",
     "dev:web": "npm --workspace=apps/web run dev",
@@ -17,6 +18,7 @@
     "lint": "npm run lint --workspaces --if-present",
     "db:generate": "npm --workspace=apps/api run prisma:generate",
     "db:migrate": "npm --workspace=apps/api run db:migrate",
+    "db:push": "npm --workspace=apps/api run db:push",
     "db:seed": "npm --workspace=apps/api run db:seed"
   },
   "keywords": [
