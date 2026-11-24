@@ -9,7 +9,7 @@
   ],
   "type": "module",
   "scripts": {
-    "start": "node apps/api/src/server.js",
+    "start": "node scripts/start-production.js",
     "dev": "node scripts/dev.js",
     "dev:api": "npm --workspace=apps/api run dev",
     "dev:web": "npm --workspace=apps/web run dev",
