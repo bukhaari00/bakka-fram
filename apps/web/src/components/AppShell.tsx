@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useI18n } from '../lib/i18n/I18nContext';
 import { useAuth } from '../lib/auth/AuthContext';
 import { SyncStatusIndicator } from './SyncStatusIndicator';
@@ -48,10 +48,17 @@ const ROLES_LIST = [
 
 export function AppShell({ children, userRole, userName }: AppShellProps) {
   const { t, locale } = useI18n();
-  const { user, logout, switchRole, isAuthenticated } = useAuth();
+  const { user, logout, switchRole, isAuthenticated, isLoading } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeRole, setActiveRole] = useState<string>('ADMIN');
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isLoading, isAuthenticated, router]);
 
   useEffect(() => {
     if (user?.roleName) {
@@ -93,6 +100,28 @@ export function AppShell({ children, userRole, userName }: AppShellProps) {
 
   const displayName = user?.fullName || userName || 'Bakka Farm System';
   const displayRole = user?.roleName || activeRole;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#f8faf8] flex flex-col items-center justify-center p-4">
+        <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mb-3" />
+        <p className="text-emerald-900 font-semibold text-sm">
+          {locale === 'so' ? 'Bakka Farm: Fadlan sug, nidaamka ayaa furmaya...' : 'Bakka Farm: Loading system...'}
+        </p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#f8faf8] flex flex-col items-center justify-center p-4">
+        <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mb-3" />
+        <p className="text-gray-600 font-medium text-sm">
+          {locale === 'so' ? 'Waxaad u gudbaysaa bogga gelitaanka (Login)...' : 'Redirecting to login...'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f8faf8] flex flex-col md:flex-row text-gray-900 font-sans antialiased">

@@ -21,9 +21,19 @@ import {
 } from 'lucide-react';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, isAuthenticated, user, isLoading: authLoading } = useAuth();
   const { locale } = useI18n();
   const router = useRouter();
+
+  React.useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      if (user?.roleName === 'STUDENT') {
+        router.push('/student');
+      } else {
+        router.push('/');
+      }
+    }
+  }, [authLoading, isAuthenticated, user, router]);
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
