@@ -6,17 +6,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 
-const port = process.env.PORT || '3000';
-const apiPort = '4000';
+const publicPort = process.env.PORT || '3000';
+const internalApiPort = process.env.INTERNAL_API_PORT || '5001';
 
 console.log('[Bakka Farm Production] Starting system...');
-console.log(`[Bakka Farm Production] Public Frontend Port: ${port}`);
-console.log(`[Bakka Farm Production] Internal API Port: ${apiPort}`);
+console.log(`[Bakka Farm Production] Public Frontend Port: ${publicPort}`);
+console.log(`[Bakka Farm Production] Internal API Port: ${internalApiPort}`);
 
-// 1. Start Backend API on internal port 4000
+// 1. Start Backend API on internal port
 const apiEnv = {
   ...process.env,
-  PORT: apiPort,
+  PORT: internalApiPort,
   HOST: '0.0.0.0',
   NODE_ENV: 'production'
 };
@@ -36,11 +36,12 @@ const nextBin = path.join(rootDir, 'node_modules', 'next', 'dist', 'bin', 'next'
 
 const webEnv = {
   ...process.env,
-  PORT: port,
+  PORT: publicPort,
+  INTERNAL_API_PORT: internalApiPort,
   NODE_ENV: 'production'
 };
 
-const webProcess = spawn('node', [nextBin, 'start', 'apps/web', '-p', port, '-H', '0.0.0.0'], {
+const webProcess = spawn('node', [nextBin, 'start', 'apps/web', '-p', publicPort, '-H', '0.0.0.0'], {
   cwd: rootDir,
   env: webEnv,
   stdio: 'inherit'

@@ -2,10 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   async rewrites() {
+    const apiPort = process.env.INTERNAL_API_PORT || '5001';
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:4000/api/:path*'
+        destination: `http://127.0.0.1:${apiPort}/api/:path*`
       }
     ];
   }
