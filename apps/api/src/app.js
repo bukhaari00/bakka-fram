@@ -22,7 +22,10 @@ export function createApp(prisma) {
   const app = express();
 
   // Basic security and parsing middleware
-  app.use(helmet());
+  app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
+  }));
   app.use(cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (e.g. mobile apps, curl, internal service-to-service, or same-origin)
