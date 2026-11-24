@@ -30,6 +30,11 @@
     "uuid": "^11.0.3",
     "zod": "^3.24.1"
   },
+  "optionalDependencies": {
+    "@node-rs/argon2-linux-x64-gnu": "^2.0.2",
+    "@node-rs/argon2-linux-x64-musl": "^2.0.2",
+    "@node-rs/argon2-win32-x64-msvc": "^2.0.2"
+  },
   "devDependencies": {
     "supertest": "^7.0.0",
     "vitest": "^2.1.8"
