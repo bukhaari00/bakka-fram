@@ -154,7 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
       return {
         success: false,
-        error: offlineResult.error || 'Cannot connect to authentication server. Please check your network or verify the backend is online.'
+        error: 'Cannot connect to authentication server. Please ensure the server (npm run dev) is running and your connection is active.'
       };
     }
   };
@@ -201,7 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
       return {
         success: false,
-        error: 'Unable to connect to the registration server. Please ensure the backend is running and try again.'
+        error: 'Cannot connect to registration server. Please ensure the server (npm run dev) is running.'
       };
     }
   };
