@@ -8,7 +8,7 @@ const prisma = new PrismaClient({
   datasources: { db: { url: dbUrl } }
 });
 
-async function main() {
+export async function bootstrapAdmin() {
   console.log('Connecting to database...');
 
   // 1. Ensure Default Farm
@@ -43,45 +43,70 @@ async function main() {
   }
   console.log('Roles verified.');
 
-  // 3. Create or Update Admin User
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@bakkafarm.com';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'BakkaAdmin2026!';
-  const adminName = process.env.ADMIN_NAME || 'Bakka Farm Administrator';
+  // 3. Create or Update Main Admin User with credentials: admin / 123564
+  const adminUsername = 'admin';
+  const adminEmail = 'admin@bakkafarm.com';
+  const adminPassword = process.env.ADMIN_INITIAL_PASSWORD || '123564';
+  const adminName = 'Bakka Farm Administrator';
 
   const passwordHash = await hashPassword(adminPassword);
 
-  const admin = await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: {
-      farm_id: farm.id,
-      full_name: adminName,
-      role_name: 'ADMIN',
-      password_hash: passwordHash,
-      is_active: true
-    },
-    create: {
-      id: uuidv4(),
-      farm_id: farm.id,
-      email: adminEmail,
-      username: 'admin',
-      phone: '+252-61-5550100',
-      password_hash: passwordHash,
-      full_name: adminName,
-      role_name: 'ADMIN',
-      is_active: true
+  // Check if admin exists by username or email
+  let existingAdmin = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { username: adminUsername },
+        { email: adminEmail }
+      ]
     }
   });
 
-  console.log('--- ADMIN USER READY ---');
+  let admin;
+  if (existingAdmin) {
+    admin = await prisma.user.update({
+      where: { id: existingAdmin.id },
+      data: {
+        farm_id: farm.id,
+        username: adminUsername,
+        email: adminEmail,
+        full_name: adminName,
+        role_name: 'ADMIN',
+        password_hash: passwordHash,
+        is_active: true
+      }
+    });
+    console.log('Updated existing administrator with requested credentials.');
+  } else {
+    admin = await prisma.user.create({
+      data: {
+        id: uuidv4(),
+        farm_id: farm.id,
+        email: adminEmail,
+        username: adminUsername,
+        phone: '+252-61-5550100',
+        password_hash: passwordHash,
+        full_name: adminName,
+        role_name: 'ADMIN',
+        is_active: true
+      }
+    });
+    console.log('Created new administrator account.');
+  }
+
+  console.log('\n--- MAIN ADMIN ACCOUNT READY ---');
+  console.log(`Username: ${admin.username}`);
   console.log(`Email:    ${admin.email}`);
   console.log(`Password: ${adminPassword}`);
   console.log(`Role:     ${admin.role_name}`);
   console.log(`ID:       ${admin.id}`);
+  return admin;
 }
 
-main()
-  .catch((err) => {
-    console.error('Bootstrap failed:', err);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+if (process.argv[1]?.includes('bootstrap-admin')) {
+  bootstrapAdmin()
+    .catch((err) => {
+      console.error('Bootstrap failed:', err);
+      process.exit(1);
+    })
+    .finally(() => prisma.$disconnect());
+}

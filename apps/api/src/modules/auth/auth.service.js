@@ -171,12 +171,9 @@ export class AuthService {
     const passwordHash = await hashPassword(password);
     const userId = uuidv4();
 
-    // Default role is STUDENT. Public registration may also select CUSTOMER.
-    // Public registration CANNOT create ADMIN, MANAGER, or STAFF.
-    let roleName = ROLES.STUDENT;
-    if (role && role.toUpperCase().trim() === 'CUSTOMER') {
-      roleName = ROLES.CUSTOMER;
-    }
+    // Public registration ALWAYS assigns STUDENT role unconditionally on backend.
+    // Public frontend cannot supply or override this role.
+    const roleName = ROLES.STUDENT;
 
     const user = await this.prisma.user.create({
       data: {
