@@ -27,7 +27,9 @@ export default function LoginPage() {
 
   React.useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      if (user?.roleName === 'STUDENT') {
+      if (user?.roleName === 'ADMIN') {
+        router.push('/admin');
+      } else if (user?.roleName === 'STUDENT') {
         router.push('/student');
       } else {
         router.push('/');
@@ -73,7 +75,9 @@ export default function LoginPage() {
         setSuccessMsg(locale === 'so' ? 'Guul! Waad soo gashay nidaamka...' : 'Success! Logging you in...');
 
         setTimeout(() => {
-          if (result.user?.roleName === 'STUDENT') {
+          if (result.user?.roleName === 'ADMIN') {
+            router.push('/admin');
+          } else if (result.user?.roleName === 'STUDENT') {
             router.push('/student');
           } else {
             router.push('/');
@@ -237,16 +241,27 @@ export default function LoginPage() {
           </form>
 
           {/* Sign Up Redirect Link */}
-          <div className="pt-4 border-t border-gray-100 text-center text-xs text-gray-600">
-            <span>
-              {locale === 'so' ? 'Weli ma lihid akoon?' : "Don't have an account yet?"}{' '}
-            </span>
-            <Link
-              href="/signup"
-              className="font-bold text-emerald-700 hover:text-emerald-800 hover:underline inline-flex items-center gap-1"
-            >
-              <span>{locale === 'so' ? 'Isku qor halkan' : 'Sign Up (Register)'}</span>
-            </Link>
+          <div className="pt-4 border-t border-gray-100 text-center text-xs text-gray-600 space-y-2">
+            <div>
+              <span>
+                {locale === 'so' ? 'Weli ma lihid akoon?' : "Don't have an account yet?"}{' '}
+              </span>
+              <Link
+                href="/signup"
+                className="font-bold text-emerald-700 hover:text-emerald-800 hover:underline inline-flex items-center gap-1"
+              >
+                <span>{locale === 'so' ? 'Isku qor halkan' : 'Sign Up (Register)'}</span>
+              </Link>
+            </div>
+            <div className="pt-2 border-t border-dashed border-gray-200">
+              <Link
+                href="/admin/login"
+                className="text-[11px] text-gray-400 hover:text-emerald-800 font-semibold inline-flex items-center gap-1 transition-colors"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>{locale === 'so' ? 'Albaabka Maamulka Sare (Admin Portal) →' : 'Administrator Security Portal →'}</span>
+              </Link>
+            </div>
           </div>
         </div>
       </div>

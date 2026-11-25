@@ -94,12 +94,12 @@ export default function SignUpPage() {
       if (result.success && result.user) {
         setSuccessMsg(
           locale === 'so'
-            ? 'Hambalyo! Akoonkaaga ardayga waa la diiwaangeliyey. Ku soo dhawoow...'
-            : 'Registration successful! Your student account is ready. Redirecting...'
+            ? 'Hambalyo! Akoonkaaga ardayga waa la diiwaangeliyey. Waxaad u gudbaysaa bogga gelitaanka (Login)...'
+            : 'Registration successful! Your student account is created. Redirecting to login...'
         );
 
         setTimeout(() => {
-          router.push('/student');
+          router.push('/login');
         }, 1200);
       } else {
         setErrorMsg(result.error || 'Registration failed. Please check your details.');

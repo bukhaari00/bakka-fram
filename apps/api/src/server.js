@@ -3,6 +3,9 @@ import { createApp } from './app.js';
 import { config } from './config/index.js';
 
 const prisma = new PrismaClient({
+  datasources: {
+    db: { url: config.databaseUrl }
+  },
   log: config.env === 'development' ? ['query', 'info', 'warn', 'error'] : ['error']
 });
 
